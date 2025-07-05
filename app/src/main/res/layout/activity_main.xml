@@ -45,6 +45,7 @@
             android:ems="10"
             android:hint="Ingrese usuario"
             android:inputType="text"
+            android:minHeight="48dp"
             android:textAlignment="center"
             android:textColor="#212121" />
 
@@ -63,6 +64,7 @@
             android:ems="10"
             android:hint="Ingrese contraseña"
             android:inputType="text"
+            android:minHeight="48dp"
             android:textAlignment="center"
             android:textColor="#212121" />
 
@@ -72,7 +74,8 @@
             android:layout_height="wrap_content"
             android:backgroundTint="#1976D2"
             android:onClick="ingresa"
-            android:text="INGRESAR" />
+            android:text="INGRESAR"
+            tools:ignore="OnClick" />
 
         <Button
             android:id="@+id/btnregistraruser"
@@ -82,7 +85,8 @@
             android:onClick="registro"
             android:text="CREAR CUENTA"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            tools:ignore="OnClick" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

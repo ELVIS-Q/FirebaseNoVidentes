@@ -39,70 +39,78 @@ public class RegistrarUsuarioActivity extends AppCompatActivity {
     }
 
     private void registrarUsuario() {
-        // Verificar que los campos no estén vacíos
-        if (validarCampos()) {
-            String emailUser = email.getText().toString().trim();
-            String passUser = password.getText().toString().trim();
+        if (!validarCampos()) return;
 
-            // Crear un nuevo usuario con email y contraseña
-            firebaseAuth.createUserWithEmailAndPassword(emailUser, passUser)
-                    .addOnCompleteListener(this, task -> {
-                        if (task.isSuccessful()) {
-                            // Usuario creado exitosamente
-                            FirebaseUser currentUser = firebaseAuth.getCurrentUser();
-                            if (currentUser != null) {
-                                // Crear un objeto Usuario
-                                Usuario nuevoUsuario = new Usuario(currentUser.getUid(), emailUser);
+        String emailUser = email.getText().toString().trim();
+        String passUser = password.getText().toString().trim();
 
-                                // Guardar el usuario en Firebase Realtime Database
-                                databaseReference.child(currentUser.getUid()).setValue(nuevoUsuario)
-                                        .addOnSuccessListener(aVoid -> {
-                                            // Redirigir a MainActivity
-                                            Intent intent = new Intent(RegistrarUsuarioActivity.this, MainActivity.class);
-                                            startActivity(intent);
-                                            finish(); // Finalizar para evitar que regrese al registrarse
-                                            Toast.makeText(RegistrarUsuarioActivity.this, "Usuario registrado exitosamente", Toast.LENGTH_SHORT).show();
-                                        })
-                                        .addOnFailureListener(e -> {
-                                            Toast.makeText(RegistrarUsuarioActivity.this, "Error al guardar en la base de datos", Toast.LENGTH_SHORT).show();
-                                        });
-                            }
-                        } else {
-                            manejarErrorRegistro(task.getException());
+        firebaseAuth.createUserWithEmailAndPassword(emailUser, passUser)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+                        if (currentUser != null) {
+                            // Enviar email de verificación
+                            currentUser.sendEmailVerification()
+                                    .addOnSuccessListener(aVoid -> {
+                                        guardarUsuarioEnBaseDeDatos(currentUser, emailUser);
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Toast.makeText(this, "Error al enviar email de verificación: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    });
                         }
-                    });
+                    } else {
+                        manejarErrorRegistro(task.getException());
+                    }
+                });
+    }
+
+    private void guardarUsuarioEnBaseDeDatos(FirebaseUser user, String emailUser) {
+        if (databaseReference == null) {
+            Toast.makeText(this, "Error al conectar con Firebase", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        Usuario nuevoUsuario = new Usuario(user.getUid(), emailUser);
+
+        databaseReference.child(user.getUid()).setValue(nuevoUsuario)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Usuario registrado. Verifica tu correo antes de iniciar sesión.", Toast.LENGTH_LONG).show();
+                    firebaseAuth.signOut(); // Cerrar sesión hasta que el usuario verifique su correo
+                    startActivity(new Intent(RegistrarUsuarioActivity.this, MainActivity.class));
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error al guardar en la base de datos: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
     }
 
     private void manejarErrorRegistro(Exception exception) {
         if (exception != null) {
             String message;
             if (exception instanceof FirebaseAuthWeakPasswordException) {
-                message = "La contraseña es demasiado débil. Intenta con una más segura.";
+                message = "La contraseña es demasiado débil.";
             } else if (exception instanceof FirebaseAuthInvalidCredentialsException) {
-                message = "El formato del correo electrónico es inválido.";
+                message = "El formato del correo es inválido.";
             } else if (exception instanceof FirebaseAuthUserCollisionException) {
-                message = "El correo electrónico ya está registrado. Usa otro.";
+                message = "El correo ya está registrado.";
             } else {
-                message = "Error al registrar el usuario: " + exception.getMessage();
+                message = "Error al registrar: " + exception.getMessage();
             }
-            Toast.makeText(RegistrarUsuarioActivity.this, message, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
         }
     }
 
     private boolean validarCampos() {
         if (email.getText().toString().trim().isEmpty() || password.getText().toString().trim().isEmpty()) {
-            Toast.makeText(this, "Por favor, complete todos los campos", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        // Validación de formato de correo electrónico
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.getText().toString().trim()).matches()) {
-            Toast.makeText(this, "El correo electrónico no es válido", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Correo inválido", Toast.LENGTH_SHORT).show();
             return false;
         }
 
-        // Validación de longitud mínima de contraseña
         if (password.getText().toString().trim().length() < 6) {
             Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show();
             return false;
@@ -111,14 +119,11 @@ public class RegistrarUsuarioActivity extends AppCompatActivity {
         return true;
     }
 
-    // Clase interna para representar un usuario
     public static class Usuario {
         public String userId;
         public String email;
 
-        public Usuario() {
-            // Constructor vacío necesario para Firebase
-        }
+        public Usuario() {}
 
         public Usuario(String userId, String email) {
             this.userId = userId;

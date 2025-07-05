@@ -1,9 +1,10 @@
 package com.personal.firebaseapp;
 
-import android.annotation.SuppressLint;
+import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -23,8 +24,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-
+import java.util.Date;
+import java.util.Locale;
 
 public class SMSActivity extends AppCompatActivity {
 
@@ -34,55 +37,32 @@ public class SMSActivity extends AppCompatActivity {
     private ArrayAdapter<String> adapter;
     private ArrayList<String> historialList;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smsactivity);
 
-        // Inicializar Firebase Realtime Database
         firebaseDatabase = FirebaseDatabase.getInstance();
         databaseReference = firebaseDatabase.getReference("received_sms");
 
-        // Inicializar ListView y ArrayAdapter
         listViewHistorial = findViewById(R.id.listViewHistorial);
         historialList = new ArrayList<>();
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, historialList);
         listViewHistorial.setAdapter(adapter);
 
-        // Cargar historial desde Firebase
         cargarHistorialDesdeFirebase();
-
-        // Verificar permisos
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{
-                    android.Manifest.permission.RECEIVE_SMS,
-                    android.Manifest.permission.READ_SMS}, 1);
-        }
+        solicitarPermisos();
 
         // Obtener datos del Intent
         String smsSender = getIntent().getStringExtra("sms_sender");
-        String smsCoordinates = getIntent().getStringExtra("sms_coordinates");
+        String smsLink = getIntent().getStringExtra("sms_link");
+        String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
 
-        // Mostrar los datos en TextViews
-        TextView smsSenderView = findViewById(R.id.sms_sender);
-        TextView coordinatesView = findViewById(R.id.sms_coordinates);
-
-        if (smsSender != null) {
-            smsSenderView.setText("Remitente: " + smsSender);
-        }
-        if (smsCoordinates != null) {
-            coordinatesView.setText("Coordenadas: " + smsCoordinates);
-
-            // Configurar el listener para abrir Google Maps
-            coordinatesView.setOnClickListener(v -> openGoogleMaps(smsCoordinates));
-
-            // Guardar las coordenadas en Firebase
-            saveCoordinatesToRealtimeDatabase(smsSender, smsCoordinates);
+        if (smsSender != null && !smsSender.isEmpty() && smsLink != null && !smsLink.isEmpty()) {
+            mostrarSmsEnPantalla(smsSender, smsLink);
+            saveMessageToHistory(smsSender, smsLink, timestamp);
         }
 
-        // Configurar el botón de regreso a ListaUsuariosActivity
         Button btnRegresar = findViewById(R.id.btnregresa);
         btnRegresar.setOnClickListener(v -> {
             Intent intent = new Intent(SMSActivity.this, ListaUsuariosActivity.class);
@@ -90,59 +70,81 @@ public class SMSActivity extends AppCompatActivity {
             finish();
         });
 
-        // Configurar clic en ListView para abrir ActivityMap con coordenadas
         listViewHistorial.setOnItemClickListener((parent, view, position, id) -> {
             String selectedItem = historialList.get(position);
-            if (selectedItem.contains("Coordenadas: ")) {
-                String coordinates = selectedItem.split("Coordenadas: ")[1];
-
-                // Iniciar ActivityMap con las coordenadas
-                Intent intent = new Intent(SMSActivity.this, ActivityMap.class);
-                intent.putExtra("sms_coordinates", coordinates);
-                startActivity(intent);
+            if (selectedItem.contains("Ubicación: ")) {
+                int index = selectedItem.indexOf("Ubicación: ") + 10;
+                if (index < selectedItem.length()) {
+                    String link = selectedItem.substring(index);
+                    openGoogleMaps(link);
+                }
             }
         });
     }
 
-    // Método para abrir Google Maps con las coordenadas
-    private void openGoogleMaps(String coordinates) {
-        String uri = "geo:" + coordinates;
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri));
-        intent.setPackage("com.google.android.apps.maps");
-        startActivity(intent);
-    }
-
-    // Método para guardar las coordenadas en Firebase Realtime Database
-    private void saveCoordinatesToRealtimeDatabase(String sender, String coordinates) {
-        if (sender != null && coordinates != null) {
-            SmsMessageData smsData = new SmsMessageData(sender, coordinates);
-
-            databaseReference.push().setValue(smsData)
-                    .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(SMSActivity.this, "Coordenadas guardadas correctamente", Toast.LENGTH_SHORT).show();
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(SMSActivity.this, "Error al guardar las coordenadas", Toast.LENGTH_SHORT).show();
-                    });
+    private void solicitarPermisos() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.RECEIVE_SMS,
+                    Manifest.permission.READ_SMS}, 1);
         }
     }
 
-    // Método para cargar el historial de mensajes desde Firebase
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 1) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permiso concedido", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Permiso denegado", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void mostrarSmsEnPantalla(String sender, String link) {
+        TextView smsSenderView = findViewById(R.id.sms_sender);
+        TextView linkView = findViewById(R.id.sms_link);
+
+        smsSenderView.setText("Remitente: " + sender);
+        linkView.setText("Ubicación: " + link);
+        linkView.setTextColor(Color.BLUE);
+        linkView.setPaintFlags(linkView.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
+        linkView.setOnClickListener(v -> openGoogleMaps(link));
+    }
+
+    private void openGoogleMaps(String link) {
+        Intent intent = new Intent(SMSActivity.this, ActivityMap.class);
+        intent.putExtra("sms_link", link);
+        startActivity(intent);
+    }
+
+    private void saveMessageToHistory(String sender, String link, String timestamp) {
+        // Se utiliza el constructor de tres parámetros; si se requiere almacenar el mensaje completo, se puede ajustar.
+        SmsMessageData smsData = new SmsMessageData(sender, link, timestamp);
+        databaseReference.push().setValue(smsData)
+                .addOnSuccessListener(aVoid -> {
+                    historialList.add("Fecha y Hora: " + timestamp + "\nRemitente: " + sender + "\nUbicación: " + link);
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(SMSActivity.this, "Mensaje guardado correctamente", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(SMSActivity.this, "Error al guardar mensaje", Toast.LENGTH_SHORT).show();
+                });
+    }
+
     private void cargarHistorialDesdeFirebase() {
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 historialList.clear();
-
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    String sender = dataSnapshot.child("sender").getValue(String.class);
-                    String coordinates = dataSnapshot.child("coordinates").getValue(String.class);
-
-                    if (sender != null && coordinates != null) {
-                        historialList.add("Remitente: " + sender + "\nCoordenadas: " + coordinates);
+                    SmsMessageData sms = dataSnapshot.getValue(SmsMessageData.class);
+                    if (sms != null) {
+                        historialList.add("Fecha y Hora: " + sms.timestamp + "\nRemitente: " + sms.sender + "\nUbicación: " + sms.link);
                     }
                 }
-
                 adapter.notifyDataSetChanged();
             }
 
@@ -152,32 +154,5 @@ public class SMSActivity extends AppCompatActivity {
             }
         });
     }
-
-    // Clase interna para representar los datos del SMS
-    public static class SmsMessageData {
-        public String sender;
-        public String coordinates;
-
-        public SmsMessageData() {
-        }
-
-        public SmsMessageData(String sender, String coordinates) {
-            this.sender = sender;
-            this.coordinates = coordinates;
-        }
-    }
-
-    // Manejar la respuesta de los permisos
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == 1) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permiso concedido
-            } else {
-                Toast.makeText(this, "Permisos necesarios para continuar", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
 }
+

@@ -9,9 +9,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.personal.firebaseapp" />
-                  <option name="mobileSdkAppId" value="1:851058959668:android:63d32989210b5d4c673161" />
-                  <option name="projectId" value="fir-app-375a1" />
-                  <option name="projectNumber" value="851058959668" />
+                  <option name="mobileSdkAppId" value="1:587906032225:android:d4f5f85e1f7de80c8a4020" />
+                  <option name="projectId" value="terr-5b38f" />
+                  <option name="projectNumber" value="587906032225" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

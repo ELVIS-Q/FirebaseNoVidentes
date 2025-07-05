@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
@@ -18,6 +19,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
 
 public class ListaUsuariosActivity extends AppCompatActivity {
@@ -44,16 +46,22 @@ public class ListaUsuariosActivity extends AppCompatActivity {
         Toolbar toolbar1 = findViewById(R.id.toolbar1);
         setSupportActionBar(toolbar1);
 
-        // Configurar Listview
+        // Configurar ListView
         usuariosAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, usuariosList);
         listViewUsuarios.setAdapter(usuariosAdapter);
 
         // Actualizar la lista de usuarios al iniciar la actividad
         actualizarListaUsuarios();
 
+        // Mostrar detalles del usuario en lugar de eliminar
         listViewUsuarios.setOnItemClickListener((parent, view, position, id) -> {
-            String usuarioId = usuariosIds.get(position);
-            eliminarUsuario(usuarioId);
+            String detalleUsuario = usuariosList.get(position);
+
+            new AlertDialog.Builder(ListaUsuariosActivity.this)
+                    .setTitle("Detalle del Usuario")
+                    .setMessage(detalleUsuario)
+                    .setPositiveButton("Cerrar", null)
+                    .show();
         });
     }
 
@@ -85,6 +93,7 @@ public class ListaUsuariosActivity extends AppCompatActivity {
         });
     }
 
+    // Puedes eliminar este método si ya no quieres permitir la eliminación desde aquí
     private void eliminarUsuario(String usuarioId) {
         databaseReference.child(usuarioId).removeValue()
                 .addOnSuccessListener(aVoid -> {
@@ -94,7 +103,6 @@ public class ListaUsuariosActivity extends AppCompatActivity {
                     Toast.makeText(ListaUsuariosActivity.this, "Error al eliminar el usuario", Toast.LENGTH_SHORT).show();
                 });
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -124,5 +132,4 @@ public class ListaUsuariosActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-
 }

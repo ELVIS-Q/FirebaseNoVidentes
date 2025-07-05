@@ -1,14 +1,13 @@
 {
   "project_info": {
-    "project_number": "851058959668",
-    "firebase_url": "https://fir-app-375a1-default-rtdb.firebaseio.com",
-    "project_id": "fir-app-375a1",
-    "storage_bucket": "fir-app-375a1.firebasestorage.app"
+    "project_number": "254081087170",
+    "project_id": "personas-no-videntes",
+    "storage_bucket": "personas-no-videntes.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:851058959668:android:63d32989210b5d4c673161",
+        "mobilesdk_app_id": "1:254081087170:android:b0972c93a8730ecbba2d5b",
         "android_client_info": {
           "package_name": "com.personal.firebaseapp"
         }
@@ -16,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDEXoztbBNvHQRaTn3ZvALpciM3KcWvnJE"
+          "current_key": "AIzaSyB_Z2J4GaeEkEsi4ffknRJd3vTEDTWvac0"
         }
       ],
       "services": {

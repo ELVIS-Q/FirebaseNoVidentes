@@ -19,6 +19,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final String CHANNEL_ID = "emergency_channel";
 
+    // Constructor vacío requerido por el sistema
+    public MyFirebaseMessagingService() {
+        super();
+    }
+
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);

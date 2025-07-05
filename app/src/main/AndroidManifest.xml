@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-    <!-- Permisos de red e internet -->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.personal.firebaseapp">
+
+    <!-- Permisos necesarios -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- Permisos para acceder a la ubicación -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> <!-- Permisos para leer y recibir mensajes SMS -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.READ_SMS" /> <!-- Habilitar la característica de telemetría -->
-    <uses-feature
-        android:name="android.hardware.telephony"
-        android:required="false" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Característica opcional -->
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -23,55 +25,42 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FIREBASE"
         tools:targetApi="31">
-        <activity
-            android:name=".UsuarioAdapter"
-            android:exported="false" />
+
+        <!-- Clave de API para Google Maps (¡nombre corregido!) -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDuw3IU8YyOMJgHrf86o926Kirl3kVQBpM" />
+
         <!-- Actividades -->
-        <activity
-            android:name=".MyFirebaseMessagingService"
-            android:exported="false" />
-        <activity
-            android:name=".ActivityMap"
-            android:exported="false" />
-        <activity
-            android:name=".SMSActivity"
-            android:exported="false" />
-        <activity
-            android:name=".RegistrarUsuarioActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ListaUsuariosActivity"
-            android:exported="false" />
-        <activity
-            android:name=".PerfilActivity"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
+        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- Receptor para SMS -->
+        </activity>
+        <activity android:name=".ActivityMap" android:exported="false" />
+        <activity android:name=".RegistrarUsuarioActivity" android:exported="false" />
+        <activity android:name=".ListaUsuariosActivity" android:exported="false" />
+        <activity android:name=".PerfilActivity" android:exported="false" />
+        <activity android:name=".SMSActivity" android:exported="true" />
+
+        <!-- Receptor SMS -->
         <receiver
-            android:name=".SmsReciever"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
-            <intent-filter>
+            android:name=".SmsReceiver"
+            android:exported="true">
+            <intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
-        </receiver> <!-- Servicio para Firebase Cloud Messaging -->
+        </receiver>
+
+        <!-- Servicio Firebase Messaging -->
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
-        </service> <!-- Configuración del Google Maps API -->
-        <meta-data
-            android:name="com.google.android.gms.maps.V2.API_KEY"
-            android:value="@string/google_maps_api_key" />
-    </application>
+        </service>
 
+    </application>
 </manifest>

@@ -46,13 +46,13 @@
             android:textSize="18sp" />
         <!-- Nuevo TextView para mostrar las coordenadas -->
         <TextView
-            android:id="@+id/sms_coordinates"
+            android:id="@+id/sms_link"
             android:layout_width="match_parent"
-            android:layout_height="34dp"
+            android:layout_height="48dp"
             android:layout_marginTop="8dp"
             android:clickable="true"
             android:focusable="true"
-            android:text="Coordenadas aparecerán aquí"
+            android:text="Link aparecerán aquí"
             android:textColor="@android:color/holo_blue_dark"
             android:textSize="18sp" />
 

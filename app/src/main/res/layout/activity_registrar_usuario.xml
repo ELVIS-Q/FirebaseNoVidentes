@@ -12,9 +12,9 @@
         android:layout_width="0dp"
         android:layout_height="474dp"
         android:layout_marginStart="30dp"
-        android:layout_marginTop="70dp"
         android:layout_marginEnd="30dp"
         android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -50,6 +50,7 @@
             android:ems="10"
             android:hint="Ingrese correo"
             android:inputType="text"
+            android:minHeight="48dp"
             android:textColor="#212121" />
 
         <TextView
@@ -68,6 +69,7 @@
             android:ems="10"
             android:hint="Ingrese contraseña"
             android:inputType="text"
+            android:minHeight="48dp"
             android:textColor="#212121" />
 
         <Button
@@ -76,7 +78,8 @@
             android:layout_height="wrap_content"
             android:backgroundTint="#1976D2"
             android:onClick="registrar"
-            android:text="REGISTRAR" />
+            android:text="REGISTRAR"
+            tools:ignore="OnClick" />
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

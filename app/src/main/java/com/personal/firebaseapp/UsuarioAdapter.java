@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UsuarioAdapter extends ArrayAdapter<String> {
@@ -19,6 +20,14 @@ public class UsuarioAdapter extends ArrayAdapter<String> {
     private List<String> usuariosList;
     private List<String> usuariosIds;
     private OnItemClickListener onItemClickListener;
+
+    // Constructor vacío necesario para evitar errores de instanciación
+    public UsuarioAdapter(@NonNull Context context) {
+        super(context, android.R.layout.simple_list_item_1, new ArrayList<>());
+        this.context = context;
+        this.usuariosList = new ArrayList<>();
+        this.usuariosIds = new ArrayList<>();
+    }
 
     public UsuarioAdapter(Context context, List<String> usuariosList, List<String> usuariosIds, OnItemClickListener onItemClickListener) {
         super(context, android.R.layout.simple_list_item_1, usuariosList);
@@ -41,7 +50,11 @@ public class UsuarioAdapter extends ArrayAdapter<String> {
         textView.setText(usuariosList.get(position));
 
         // Manejo de clics
-        view.setOnClickListener(v -> onItemClickListener.onItemClick(usuariosIds.get(position)));
+        view.setOnClickListener(v -> {
+            if (onItemClickListener != null && position < usuariosIds.size()) {
+                onItemClickListener.onItemClick(usuariosIds.get(position));
+            }
+        });
 
         return view;
     }
