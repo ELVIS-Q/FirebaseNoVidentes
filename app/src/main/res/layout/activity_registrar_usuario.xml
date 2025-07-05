@@ -7,18 +7,26 @@
     android:layout_height="match_parent"
     android:background="#E5E7EB"
     tools:context=".RegistrarUsuarioActivity">
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:scaleType="centerCrop"
+        app:srcCompat="@mipmap/vale"
+        tools:layout_editor_absoluteX="69dp"
+        tools:layout_editor_absoluteY="39dp"
+        tools:ignore="MissingConstraints" />
 
     <LinearLayout
         android:layout_width="0dp"
-        android:layout_height="474dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="30dp"
         android:layout_marginEnd="30dp"
         android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="MissingConstraints">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
             android:id="@+id/textView3"
@@ -32,54 +40,79 @@
 
         <Space
             android:layout_width="match_parent"
-            android:layout_height="11dp" />
+            android:layout_height="16dp" />
 
-        <TextView
-            android:id="@+id/tv11"
+        <!-- Campo CORREO con ícono -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="CORREO"
-            android:textAlignment="center"
-            android:textColor="#212121"
-            android:textSize="16sp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp">
 
-        <EditText
-            android:id="@+id/email"
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Icono correo"
+                android:src="@mipmap/registrar_icon" />
+
+            <EditText
+                android:id="@+id/email"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Ingrese correo"
+                android:inputType="textEmailAddress"
+                android:autofillHints="emailAddress"
+                android:importantForAutofill="yes"
+                android:minHeight="48dp"
+                android:textColor="#212121"
+                android:textColorHint="#888888" />
+        </LinearLayout>
+
+        <!-- Campo CONTRASEÑA con ícono -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="Ingrese correo"
-            android:inputType="text"
-            android:minHeight="48dp"
-            android:textColor="#212121" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp">
 
-        <TextView
-            android:id="@+id/tv12"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="CONTRASEÑA"
-            android:textAlignment="center"
-            android:textColor="#212121"
-            android:textSize="16sp" />
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Icono contraseña"
+                android:src="@mipmap/contrasena_icon" />
 
-        <EditText
-            android:id="@+id/password"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:hint="Ingrese contraseña"
-            android:inputType="text"
-            android:minHeight="48dp"
-            android:textColor="#212121" />
+            <EditText
+                android:id="@+id/password"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Ingrese contraseña"
+                android:inputType="textPassword"
+                android:autofillHints="password"
+                android:importantForAutofill="yes"
+                android:minHeight="48dp"
+                android:textColor="#212121"
+                android:textColorHint="#888888" />
+        </LinearLayout>
 
+        <!-- Botón REGISTRAR con ícono -->
         <Button
             android:id="@+id/btnRegistrar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:backgroundTint="#1976D2"
+            android:drawableStart="@mipmap/registrar_icon"
+            android:drawablePadding="8dp"
             android:onClick="registrar"
+            android:padding="10dp"
             android:text="REGISTRAR"
+            android:textAllCaps="true"
+            android:textColor="#FFFFFF"
             tools:ignore="OnClick" />
-
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

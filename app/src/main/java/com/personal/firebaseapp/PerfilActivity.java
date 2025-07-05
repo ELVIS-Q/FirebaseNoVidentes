@@ -1,113 +1,85 @@
 package com.personal.firebaseapp;
 
-import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import android.widget.*;
 
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class PerfilActivity extends AppCompatActivity {
-    private EditText cedula, nombres, celular, direccion;
-    private Button btnregresar, btnregistrar;
 
-    private FirebaseAuth firebaseAuth;
-    private FirebaseDatabase firebaseDatabase;
-    private DatabaseReference databaseReference;
+    private EditText ced, nom, cel, dir;
+    private Button btnReg, btnBack;
+    private FirebaseAuth auth;
+    private FirebaseFirestore firestore;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_perfil);
 
         // Inicializar Firebase
-        firebaseAuth = FirebaseAuth.getInstance();
-        firebaseDatabase = FirebaseDatabase.getInstance();
-        databaseReference = firebaseDatabase.getReference("usuarios");
+        auth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
 
-        // Vincular vistas
-        cedula = findViewById(R.id.cedula);
-        nombres = findViewById(R.id.nombres);
-        celular = findViewById(R.id.celular);
-        direccion = findViewById(R.id.direccion);
-        btnregistrar = findViewById(R.id.btnregistrar);
-        btnregresar = findViewById(R.id.btnRegresar);
+        // Referencias a vistas
+        ced = findViewById(R.id.cedula);
+        nom = findViewById(R.id.nombres);
+        cel = findViewById(R.id.celular);
+        dir = findViewById(R.id.direccion);
+        btnReg = findViewById(R.id.btnregistrar);
+        btnBack = findViewById(R.id.btnRegresar); // Asegúrate que el botón exista en el XML
 
-        btnregresar.setOnClickListener(v -> finish());
+        // Botón Registrar Familiar
+        btnReg.setOnClickListener(v -> registrarFamiliar());
 
-        btnregistrar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                registrarUsuario();
-            }
-        });
+        // Botón Regresar
+        btnBack.setOnClickListener(v -> finish());
     }
 
-    private void registrarUsuario() {
-        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+    private void registrarFamiliar() {
+        // Obtener valores
+        String c = ced.getText().toString().trim();
+        String n = nom.getText().toString().trim();
+        String ce = cel.getText().toString().trim();
+        String d = dir.getText().toString().trim();
 
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-
-            // Crear objeto con los datos del usuario
-            Usuario usuario = new Usuario(
-                    cedula.getText().toString(),
-                    nombres.getText().toString(),
-                    celular.getText().toString(),
-                    direccion.getText().toString()
-            );
-
-            // Guardar datos en Realtime Database
-            databaseReference.child(userId).setValue(usuario)
-                    .addOnCompleteListener(new OnCompleteListener<Void>() {
-                        @Override
-                        public void onComplete(@NonNull Task<Void> task) {
-                            if (task.isSuccessful()) {
-                                Toast.makeText(PerfilActivity.this, "Registro exitoso", Toast.LENGTH_SHORT).show();
-                                limpiarFormulario();
-                            } else {
-                                Toast.makeText(PerfilActivity.this, "Error al registrar datos", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-        } else {
-            Toast.makeText(this, "Usuario no autenticado", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void limpiarFormulario() {
-        cedula.setText("");
-        nombres.setText("");
-        celular.setText("");
-        direccion.setText("");
-    }
-
-    // Clase interna para representar al usuario
-    public static class Usuario {
-        public String cedula;
-        public String nombres;
-        public String celular;
-        public String direccion;
-
-        public Usuario() {
-            // Constructor vacío necesario para Firebase
+        // Validación
+        if (c.isEmpty() || n.isEmpty() || ce.isEmpty() || d.isEmpty()) {
+            Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        public Usuario(String cedula, String nombres, String celular, String direccion) {
-            this.cedula = cedula;
-            this.nombres = nombres;
-            this.celular = celular;
-            this.direccion = direccion;
+        // Obtener UID del usuario autenticado
+        String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+        if (uid == null) {
+            Toast.makeText(this, "No hay usuario autenticado", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        // Crear el mapa de datos a guardar
+        Map<String, Object> data = new HashMap<>();
+        data.put("cedula", c);
+        data.put("nombres", n);
+        data.put("celular", ce);
+        data.put("direccion", d);
+        data.put("uid", uid);
+
+        // Guardar en la colección "familiares"
+        firestore.collection("familiares")
+                .add(data)
+                .addOnSuccessListener(docRef -> {
+                    Toast.makeText(this, "Familiar guardado exitosamente", Toast.LENGTH_SHORT).show();
+                    finish(); // Vuelve a la pantalla anterior (ListaUsuarios)
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error al guardar: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
     }
 }

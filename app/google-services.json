@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "254081087170",
-    "project_id": "personas-no-videntes",
-    "storage_bucket": "personas-no-videntes.firebasestorage.app"
+    "project_number": "749650104159",
+    "project_id": "personasnovidentes",
+    "storage_bucket": "personasnovidentes.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:254081087170:android:b0972c93a8730ecbba2d5b",
+        "mobilesdk_app_id": "1:749650104159:android:6dd25c2f3e1e972a8430ea",
         "android_client_info": {
           "package_name": "com.personal.firebaseapp"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB_Z2J4GaeEkEsi4ffknRJd3vTEDTWvac0"
+          "current_key": "AIzaSyBi3dDC6HAD05F-x6onko0hpMyL1HLdSE4"
         }
       ],
       "services": {

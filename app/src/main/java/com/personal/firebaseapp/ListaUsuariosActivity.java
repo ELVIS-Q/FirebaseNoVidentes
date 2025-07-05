@@ -1,107 +1,100 @@
 package com.personal.firebaseapp;
 
-import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.Toast;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.*;
 
 import java.util.ArrayList;
 
 public class ListaUsuariosActivity extends AppCompatActivity {
 
-    private ListView listViewUsuarios;
-    private ArrayList<String> usuariosList;
-    private ArrayList<String> usuariosIds;
-    private DatabaseReference databaseReference;
-    private ArrayAdapter<String> usuariosAdapter;
+    private ListView listView;
+    private ArrayList<Familiar> lista = new ArrayList<>();
+    private ArrayList<String> ids = new ArrayList<>();
+    private UsuarioAdapter adapter;
+    private FirebaseAuth auth;
+    private FirebaseFirestore firestore;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lista_usuarios);
 
-        // Inicialización de elementos
-        listViewUsuarios = findViewById(R.id.listViewUsuarios);
-        usuariosList = new ArrayList<>();
-        usuariosIds = new ArrayList<>();
-        databaseReference = FirebaseDatabase.getInstance().getReference("usuarios");
+        Toolbar tb = findViewById(R.id.toolbar1);
+        setSupportActionBar(tb);
 
-        // Configurar la toolbar
-        Toolbar toolbar1 = findViewById(R.id.toolbar1);
-        setSupportActionBar(toolbar1);
+        listView = findViewById(R.id.listViewUsuarios);
+        auth = FirebaseAuth.getInstance();
+        firestore = FirebaseFirestore.getInstance();
 
-        // Configurar ListView
-        usuariosAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, usuariosList);
-        listViewUsuarios.setAdapter(usuariosAdapter);
+        adapter = new UsuarioAdapter(this, lista);
+        listView.setAdapter(adapter);
 
-        // Actualizar la lista de usuarios al iniciar la actividad
-        actualizarListaUsuarios();
+        cargarFamiliaresDesdeFirestore();
 
-        // Mostrar detalles del usuario en lugar de eliminar
-        listViewUsuarios.setOnItemClickListener((parent, view, position, id) -> {
-            String detalleUsuario = usuariosList.get(position);
-
-            new AlertDialog.Builder(ListaUsuariosActivity.this)
-                    .setTitle("Detalle del Usuario")
-                    .setMessage(detalleUsuario)
-                    .setPositiveButton("Cerrar", null)
-                    .show();
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            mostrarDialogoEliminar(position);
         });
     }
 
-    private void actualizarListaUsuarios() {
-        databaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                usuariosList.clear();
-                usuariosIds.clear();
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    String usuarioId = dataSnapshot.getKey();
-                    String cedula = dataSnapshot.child("cedula").getValue(String.class);
-                    String nombres = dataSnapshot.child("nombres").getValue(String.class);
-                    String celular = dataSnapshot.child("celular").getValue(String.class);
-                    String direccion = dataSnapshot.child("direccion").getValue(String.class);
+    private void cargarFamiliaresDesdeFirestore() {
+        String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
 
-                    if (cedula != null && nombres != null && celular != null && direccion != null) {
-                        usuariosList.add("Cédula: " + cedula + "\nNombre: " + nombres + "\nCelular: " + celular + "\nDirección: " + direccion);
-                        usuariosIds.add(usuarioId);
+        if (uid == null) {
+            Toast.makeText(this, "Usuario no autenticado", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        firestore.collection("familiares")
+                .whereEqualTo("uid", uid)
+                .addSnapshotListener((snapshots, error) -> {
+                    if (error != null) {
+                        Toast.makeText(this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                        return;
                     }
-                }
-                usuariosAdapter.notifyDataSetChanged();
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(ListaUsuariosActivity.this, "Error al obtener los datos", Toast.LENGTH_SHORT).show();
-            }
-        });
+                    lista.clear();
+                    ids.clear();
+
+                    for (QueryDocumentSnapshot doc : snapshots) {
+                        Familiar f = doc.toObject(Familiar.class);
+                        lista.add(f);
+                        ids.add(doc.getId());  // guardar ID para eliminación
+                    }
+
+                    adapter.notifyDataSetChanged();
+                });
     }
 
-    // Puedes eliminar este método si ya no quieres permitir la eliminación desde aquí
-    private void eliminarUsuario(String usuarioId) {
-        databaseReference.child(usuarioId).removeValue()
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(ListaUsuariosActivity.this, "Usuario eliminado", Toast.LENGTH_SHORT).show();
+    private void mostrarDialogoEliminar(int position) {
+        Familiar f = lista.get(position);
+        String docId = ids.get(position);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Eliminar familiar")
+                .setMessage("¿Deseas eliminar a:\n" + f.nombres + "?")
+                .setPositiveButton("Sí", (dialog, which) -> eliminarFamiliar(docId))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void eliminarFamiliar(String docId) {
+        firestore.collection("familiares").document(docId)
+                .delete()
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(this, "Familiar eliminado", Toast.LENGTH_SHORT).show();
+                    cargarFamiliaresDesdeFirestore(); // refrescar lista
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(ListaUsuariosActivity.this, "Error al eliminar el usuario", Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Error al eliminar: " + e.getMessage(), Toast.LENGTH_LONG).show());
     }
 
     @Override
@@ -114,22 +107,23 @@ public class ListaUsuariosActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.registrar) {
-            Toast.makeText(this, "Ida al registro", Toast.LENGTH_LONG).show();
-            Intent intent = new Intent(this, PerfilActivity.class);
-            startActivity(intent);
+        if (id == R.id.ver_sms) {
+            startActivity(new Intent(this, SMSActivity.class));
+        } else if (id == R.id.registrar) {
+            startActivity(new Intent(this, PerfilActivity.class));
         } else if (id == R.id.cerrar_sesion) {
-            FirebaseAuth.getInstance().signOut();
-            Toast.makeText(this, "Sesión cerrada", Toast.LENGTH_LONG).show();
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
+            auth.signOut();
+            startActivity(new Intent(this, MainActivity.class));
             finish();
-        } else if (id == R.id.ver_sms) {
-            Toast.makeText(this, "Ver SMS", Toast.LENGTH_LONG).show();
-            Intent intent = new Intent(this, SMSActivity.class);
-            startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public static class Familiar {
+        public String cedula, nombres, celular, direccion;
+
+        public Familiar() {
+        }
     }
 }

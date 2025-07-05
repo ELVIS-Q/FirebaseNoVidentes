@@ -49,6 +49,12 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx") // Usamos string porque 'libs.firebaseAuth' no existe
     implementation(libs.firebase.database)
     implementation(libs.firebase.messaging)
+    implementation ("com.google.firebase:firebase-database:20.3.0")
+    implementation ("com.squareup.okhttp3:okhttp:4.10.0")
+    implementation ("com.google.firebase:firebase-firestore:24.11.1")
+
+
+
 
     // Google Maps
     implementation(libs.play.services.maps)

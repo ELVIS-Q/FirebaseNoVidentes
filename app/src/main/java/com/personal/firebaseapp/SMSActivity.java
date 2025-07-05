@@ -1,158 +1,158 @@
 package com.personal.firebaseapp;
 
-import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.graphics.Paint;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.format.DateFormat;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
+import android.app.AlertDialog;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.Locale;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SMSActivity extends AppCompatActivity {
 
-    private FirebaseDatabase firebaseDatabase;
-    private DatabaseReference databaseReference;
+    private TextView smsSender;
+    private TextView smsLink;
     private ListView listViewHistorial;
-    private ArrayAdapter<String> adapter;
-    private ArrayList<String> historialList;
+    private Button btnRegresar;
+
+    private ArrayList<String> historialMensajes = new ArrayList<>();
+    private ArrayAdapter<String> adaptador;
+
+    private static final String PREFS_NAME = "HistorialPrefs";
+    private static final String CLAVE_HISTORIAL = "mensajes_historial";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smsactivity);
 
-        firebaseDatabase = FirebaseDatabase.getInstance();
-        databaseReference = firebaseDatabase.getReference("received_sms");
-
+        // Vincular vistas
+        smsSender = findViewById(R.id.sms_sender);
+        smsLink = findViewById(R.id.sms_link);
         listViewHistorial = findViewById(R.id.listViewHistorial);
-        historialList = new ArrayList<>();
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, historialList);
-        listViewHistorial.setAdapter(adapter);
+        btnRegresar = findViewById(R.id.btnregresa);
 
-        cargarHistorialDesdeFirebase();
-        solicitarPermisos();
+        // Recuperar historial guardado
+        cargarHistorial();
 
-        // Obtener datos del Intent
-        String smsSender = getIntent().getStringExtra("sms_sender");
-        String smsLink = getIntent().getStringExtra("sms_link");
-        String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+        // Adaptador con texto negro directamente
+        adaptador = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, historialMensajes) {
+            @Override
+            public View getView(int position, View convertView, android.view.ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                TextView textView = (TextView) view.findViewById(android.R.id.text1);
+                textView.setTextColor(Color.BLACK); // ← letras negras fuertes
+                return view;
+            }
+        };
+        listViewHistorial.setAdapter(adaptador);
 
-        if (smsSender != null && !smsSender.isEmpty() && smsLink != null && !smsLink.isEmpty()) {
-            mostrarSmsEnPantalla(smsSender, smsLink);
-            saveMessageToHistory(smsSender, smsLink, timestamp);
+        // Detectar clic en ítem del historial
+        listViewHistorial.setOnItemClickListener((parent, view, position, id) -> {
+            String mensajeSeleccionado = historialMensajes.get(position);
+
+            // Crear opciones del diálogo
+            ArrayList<String> opciones = new ArrayList<>();
+            opciones.add("Eliminar");
+            if (mensajeSeleccionado.contains("https://maps.google.com")) {
+                opciones.add("Ver ubicación");
+            }
+            opciones.add("Cancelar");
+
+            // Mostrar diálogo
+            new AlertDialog.Builder(SMSActivity.this)
+                    .setTitle("Opciones")
+                    .setItems(opciones.toArray(new CharSequence[0]), (dialog, which) -> {
+                        String seleccion = opciones.get(which);
+
+                        switch (seleccion) {
+                            case "Eliminar":
+                                historialMensajes.remove(position);
+                                guardarHistorial();
+                                adaptador.notifyDataSetChanged();
+                                break;
+
+                            case "Ver ubicación":
+                                String url = extraerUrl(mensajeSeleccionado);
+                                if (url != null) {
+                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                    startActivity(intent);
+                                }
+                                break;
+
+                            case "Cancelar":
+                                dialog.dismiss();
+                                break;
+                        }
+                    })
+                    .show();
+        });
+
+        // Recibir mensaje
+        String mensaje = getIntent().getStringExtra("mensaje_sms");
+
+        if (mensaje != null && !mensaje.isEmpty()) {
+            smsSender.setText("Mensaje recibido:");
+            smsLink.setText(mensaje);
+
+            // Obtener fecha y hora actual
+            String fechaHora = DateFormat.format("dd/MM/yyyy HH:mm:ss", new Date()).toString();
+            String mensajeConFechaHora = "📅 " + fechaHora + "\n" + mensaje;
+
+            // Añadir al historial
+            historialMensajes.add(mensajeConFechaHora);
+            guardarHistorial();
+            adaptador.notifyDataSetChanged();
+        } else {
+            smsSender.setText("No se recibió ningún mensaje.");
+            smsLink.setText("");
         }
 
-        Button btnRegresar = findViewById(R.id.btnregresa);
-        btnRegresar.setOnClickListener(v -> {
+        // Botón REGRESAR
+        btnRegresar.setOnClickListener(view -> {
             Intent intent = new Intent(SMSActivity.this, ListaUsuariosActivity.class);
             startActivity(intent);
             finish();
         });
-
-        listViewHistorial.setOnItemClickListener((parent, view, position, id) -> {
-            String selectedItem = historialList.get(position);
-            if (selectedItem.contains("Ubicación: ")) {
-                int index = selectedItem.indexOf("Ubicación: ") + 10;
-                if (index < selectedItem.length()) {
-                    String link = selectedItem.substring(index);
-                    openGoogleMaps(link);
-                }
-            }
-        });
     }
 
-    private void solicitarPermisos() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{
-                    Manifest.permission.RECEIVE_SMS,
-                    Manifest.permission.READ_SMS}, 1);
-        }
+    private void guardarHistorial() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        Set<String> set = new HashSet<>(historialMensajes);
+        editor.putStringSet(CLAVE_HISTORIAL, set);
+        editor.apply();
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 1) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permiso concedido", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Permiso denegado", Toast.LENGTH_SHORT).show();
+    private void cargarHistorial() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        Set<String> set = prefs.getStringSet(CLAVE_HISTORIAL, new HashSet<>());
+        historialMensajes.clear();
+        historialMensajes.addAll(set);
+    }
+
+    // Extrae la primera URL de Google Maps encontrada en el mensaje
+    private String extraerUrl(String texto) {
+        String[] partes = texto.split("\\s+");
+        for (String parte : partes) {
+            if (parte.startsWith("https://maps.google.com")) {
+                return parte;
             }
         }
-    }
-
-    private void mostrarSmsEnPantalla(String sender, String link) {
-        TextView smsSenderView = findViewById(R.id.sms_sender);
-        TextView linkView = findViewById(R.id.sms_link);
-
-        smsSenderView.setText("Remitente: " + sender);
-        linkView.setText("Ubicación: " + link);
-        linkView.setTextColor(Color.BLUE);
-        linkView.setPaintFlags(linkView.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
-        linkView.setOnClickListener(v -> openGoogleMaps(link));
-    }
-
-    private void openGoogleMaps(String link) {
-        Intent intent = new Intent(SMSActivity.this, ActivityMap.class);
-        intent.putExtra("sms_link", link);
-        startActivity(intent);
-    }
-
-    private void saveMessageToHistory(String sender, String link, String timestamp) {
-        // Se utiliza el constructor de tres parámetros; si se requiere almacenar el mensaje completo, se puede ajustar.
-        SmsMessageData smsData = new SmsMessageData(sender, link, timestamp);
-        databaseReference.push().setValue(smsData)
-                .addOnSuccessListener(aVoid -> {
-                    historialList.add("Fecha y Hora: " + timestamp + "\nRemitente: " + sender + "\nUbicación: " + link);
-                    adapter.notifyDataSetChanged();
-                    Toast.makeText(SMSActivity.this, "Mensaje guardado correctamente", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(SMSActivity.this, "Error al guardar mensaje", Toast.LENGTH_SHORT).show();
-                });
-    }
-
-    private void cargarHistorialDesdeFirebase() {
-        databaseReference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                historialList.clear();
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    SmsMessageData sms = dataSnapshot.getValue(SmsMessageData.class);
-                    if (sms != null) {
-                        historialList.add("Fecha y Hora: " + sms.timestamp + "\nRemitente: " + sms.sender + "\nUbicación: " + sms.link);
-                    }
-                }
-                adapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("Firebase", "Error al obtener historial", error.toException());
-            }
-        });
+        return null;
     }
 }
-
