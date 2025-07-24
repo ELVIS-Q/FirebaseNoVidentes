@@ -12,15 +12,15 @@ import androidx.annotation.Nullable;
 
 import java.util.List;
 
-public class UsuarioAdapter extends ArrayAdapter<ListaUsuariosActivity.Familiar> {
+public class UsuarioAdapter extends ArrayAdapter<UsuarioAdapter.Familiar> {
 
     private final Context context;
-    private final List<ListaUsuariosActivity.Familiar> familiares;
+    private final List<Familiar> Usuarios;
 
-    public UsuarioAdapter(Context context, List<ListaUsuariosActivity.Familiar> familiares) {
+    public UsuarioAdapter(Context context, List<Familiar> familiares) {
         super(context, 0, familiares);
         this.context = context;
-        this.familiares = familiares;
+        this.Usuarios  = familiares;
     }
 
     @NonNull
@@ -32,7 +32,7 @@ public class UsuarioAdapter extends ArrayAdapter<ListaUsuariosActivity.Familiar>
         }
 
         TextView textView = view.findViewById(android.R.id.text1);
-        ListaUsuariosActivity.Familiar f = familiares.get(position);
+        Familiar f = Usuarios.get(position);
 
         String texto = "Cédula: " + f.cedula + "\n" +
                 "Nombre: " + f.nombres + "\n" +
@@ -44,5 +44,24 @@ public class UsuarioAdapter extends ArrayAdapter<ListaUsuariosActivity.Familiar>
         textView.setTextColor(0xFF000000); // negro
 
         return view;
+    }
+
+    // Clase Familiar interna para que funcione todo en este mismo archivo
+    public static class Familiar {
+        public String cedula;
+        public String nombres;
+        public String celular;
+        public String direccion;
+
+        public Familiar() {
+            // Constructor requerido por Firestore
+        }
+
+        public Familiar(String cedula, String nombres, String celular, String direccion) {
+            this.cedula = cedula;
+            this.nombres = nombres;
+            this.celular = celular;
+            this.direccion = direccion;
+        }
     }
 }

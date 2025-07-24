@@ -20,8 +20,8 @@
 
     <LinearLayout
         android:id="@+id/linearLayout"
-        android:layout_width="344dp"
-        android:layout_height="420dp"
+        android:layout_width="347dp"
+        android:layout_height="499dp"
         android:layout_margin="32dp"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -124,17 +124,6 @@
             android:text="REGRESAR"
             android:textColor="#FFFFFF" />
     </LinearLayout>
-
-    <ImageView
-        android:id="@+id/imageView6"
-        android:layout_width="179dp"
-        android:layout_height="95dp"
-        app:layout_constraintBottom_toBottomOf="@+id/imageView5"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/imageView5"
-        app:layout_constraintVertical_bias="0.085"
-        app:srcCompat="@mipmap/vi_icon" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

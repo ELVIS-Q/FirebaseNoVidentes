@@ -10,15 +10,17 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class RegistrarUsuarioActivity extends AppCompatActivity {
 
     private EditText etEmail, etPass;
     private Button btnReg;
     private FirebaseAuth auth;
-    private DatabaseReference dbRef;
+    private FirebaseFirestore firestore;
 
     @Override
     protected void onCreate(Bundle s) {
@@ -26,7 +28,7 @@ public class RegistrarUsuarioActivity extends AppCompatActivity {
         setContentView(R.layout.activity_registrar_usuario);
 
         auth = FirebaseAuth.getInstance();
-        dbRef = FirebaseDatabase.getInstance().getReference("usuarios");
+        firestore = FirebaseFirestore.getInstance();
 
         etEmail = findViewById(R.id.email);
         etPass = findViewById(R.id.password);
@@ -44,19 +46,28 @@ public class RegistrarUsuarioActivity extends AppCompatActivity {
             auth.createUserWithEmailAndPassword(e, p)
                     .addOnSuccessListener(res -> {
                         String uid = res.getUser().getUid();
-                        dbRef.child(uid).setValue(new Usuario(uid, e))
+
+                        // Crear mapa de datos para Firestore
+                        Map<String, Object> usuario = new HashMap<>();
+                        usuario.put("userId", uid);
+                        usuario.put("email", e);
+
+                        // Guardar en Firestore en la colección "usuarios"
+                        firestore.collection("Usuarios")
+                                .document(uid)
+                                .set(usuario)
                                 .addOnSuccessListener(unused -> {
                                     Toast.makeText(this, "Usuario registrado", Toast.LENGTH_SHORT).show();
                                     startActivity(new Intent(this, MainActivity.class));
                                     finish();
                                 })
                                 .addOnFailureListener(error -> {
-                                    Toast.makeText(this, "Error al guardar usuario: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                                    Toast.makeText(this, "Error al guardar en Firestore: " + error.getMessage(), Toast.LENGTH_LONG).show();
                                 });
                     })
                     .addOnFailureListener(err -> {
                         if (err instanceof FirebaseAuthUserCollisionException) {
-                            Toast.makeText(this, "Registro exitoso...", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "El usuario ya existe", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(this, MainActivity.class));
                             finish();
                         } else {
@@ -64,17 +75,5 @@ public class RegistrarUsuarioActivity extends AppCompatActivity {
                         }
                     });
         });
-    }
-
-    public static class Usuario {
-        public String userId;
-        public String email;
-
-        public Usuario() {} // Constructor vacío requerido por Firebase
-
-        public Usuario(String userId, String email) {
-            this.userId = userId;
-            this.email = email;
-        }
     }
 }
